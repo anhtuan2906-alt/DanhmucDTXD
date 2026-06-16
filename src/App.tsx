@@ -206,7 +206,9 @@ export default function App() {
     giaiDoan: '',
     dauMuc: '',
     noiDung: '',
-    phongBan: 'QLĐT'
+    phongBan: 'QLĐT',
+    positionMode: 'end',
+    targetItem: ''
   });
   const [isAddingContent, setIsAddingContent] = useState(false);
   const [addContentMessage, setAddContentMessage] = useState<{type: 'error' | 'success', text: string} | null>(null);
@@ -379,7 +381,13 @@ export default function App() {
       if (idx === 0) return; // skip header
       const maCT = row[0]?.trim();
       if (importForm.maCongTrinh && maCT !== importForm.maCongTrinh) return;
-      const noiDung = row[3]?.trim();
+      let noiDung = row[3]?.trim();
+      
+      if (noiDung) {
+         const sortMatch = noiDung.match(/(.*?)\|SORTED\|(before|after)\|(.*)/);
+         if (sortMatch) noiDung = sortMatch[1];
+      }
+      
       const phongBan = row[4]?.trim();
       if (phongBan && noiDung) valid.push({ phongBan, noiDung });
     });
@@ -695,27 +703,65 @@ export default function App() {
       const rawDM = row[idxBsDM]?.trim() || '';
       const gd = resolveGD(rawGD);
       const dm = resolveDM(rawDM);
+      
+      let rawNoiDung = row[idxBsND]?.trim() || '';
+      let noiDung = rawNoiDung;
+      let sortMode = '';
+      let sortTarget = '';
+      
+      const sortMatch = rawNoiDung.match(/(.*?)\|SORTED\|(before|after)\|(.*)/);
+      if (sortMatch) {
+         noiDung = sortMatch[1];
+         sortMode = sortMatch[2];
+         sortTarget = sortMatch[3];
+      }
+      
       return {
         maCT: row[idxBsMaCT]?.trim() || '',
         gdMa: gd.ma, gdName: gd.name,
         dmMa: dm.ma, dmName: dm.name,
-        noiDung: row[idxBsND]?.trim() || '',
-        phongBan: row[idxBsPB]?.trim() || ''
+        noiDung: noiDung,
+        phongBan: row[idxBsPB]?.trim() || '',
+        sortMode, sortTarget
       };
     }).filter(x => x.maCT === selectedMaCT && x.noiDung);
-
-    const allRequiredItems = [...baseItems, ...extraItems];
 
     // Grouping structure by Mã
     type ItemType = { noiDung: string, phongBan: string };
     const itemsByGD: Record<string, { name: string, dms: Record<string, { name: string, items: ItemType[] }> }> = {};
 
-    allRequiredItems.forEach(item => {
+    baseItems.forEach(item => {
       if (!itemsByGD[item.gdMa]) itemsByGD[item.gdMa] = { name: item.gdName, dms: {} };
       if (!itemsByGD[item.gdMa].dms[item.dmMa]) itemsByGD[item.gdMa].dms[item.dmMa] = { name: item.dmName, items: [] };
       const exists = itemsByGD[item.gdMa].dms[item.dmMa].items.find(x => x.noiDung === item.noiDung);
       if (!exists) {
         itemsByGD[item.gdMa].dms[item.dmMa].items.push({ noiDung: item.noiDung, phongBan: item.phongBan });
+      }
+    });
+    
+    extraItems.forEach(item => {
+      if (!itemsByGD[item.gdMa]) itemsByGD[item.gdMa] = { name: item.gdName, dms: {} };
+      if (!itemsByGD[item.gdMa].dms[item.dmMa]) itemsByGD[item.gdMa].dms[item.dmMa] = { name: item.dmName, items: [] };
+      
+      const targetArray = itemsByGD[item.gdMa].dms[item.dmMa].items;
+      const exists = targetArray.find(x => x.noiDung === item.noiDung);
+      
+      if (!exists) {
+        let inserted = false;
+        if (item.sortMode && item.sortTarget) {
+           const targetIdx = targetArray.findIndex(x => x.noiDung === item.sortTarget);
+           if (targetIdx !== -1) {
+              if (item.sortMode === 'before') {
+                 targetArray.splice(targetIdx, 0, { noiDung: item.noiDung, phongBan: item.phongBan });
+              } else {
+                 targetArray.splice(targetIdx + 1, 0, { noiDung: item.noiDung, phongBan: item.phongBan });
+              }
+              inserted = true;
+           }
+        }
+        if (!inserted) {
+           targetArray.push({ noiDung: item.noiDung, phongBan: item.phongBan });
+        }
       }
     });
 
@@ -1278,6 +1324,38 @@ export default function App() {
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm font-medium text-slate-800 bg-white shadow-sm transition-all placeholder:text-slate-400 placeholder:font-normal"
                   />
                 </div>
+                <div>
+                  <label className="block mb-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Vị trí thêm mới</label>
+                  <select
+                    value={addContentForm.positionMode}
+                    onChange={e => setAddContentForm({...addContentForm, positionMode: e.target.value, targetItem: ''})}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm font-medium text-slate-700 bg-white shadow-sm transition-all"
+                  >
+                    <option value="end">Thêm vào cuối danh sách</option>
+                    <option value="before">Chèn trước một nội dung</option>
+                    <option value="after">Chèn sau một nội dung</option>
+                  </select>
+                </div>
+                {addContentForm.positionMode !== 'end' && addContentForm.giaiDoan && addContentForm.dauMuc && (
+                  <div>
+                    <label className="block mb-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Chọn nội dung hiện tại</label>
+                    <select
+                      value={addContentForm.targetItem}
+                      onChange={e => setAddContentForm({...addContentForm, targetItem: e.target.value})}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm font-medium text-slate-700 bg-white shadow-sm transition-all"
+                    >
+                      <option value="">-- Chọn nội dung --</option>
+                      {/* Calculate available items for chosen Gd and Dm from data */}
+                      {(() => {
+                        // find items in this section
+                        const availableItems = data.filter(r => r[2] === `TYPE:ITEM|${addContentForm.giaiDoan}|${addContentForm.dauMuc}`);
+                        return availableItems.map((r, i) => (
+                           <option key={i} value={r[1]}>{r[1]}</option>
+                        ));
+                      })()}
+                    </select>
+                  </div>
+                )}
                 <div className="relative z-[60]" ref={addPBDropdownRef}>
                   <label className="block mb-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Phòng ban phụ trách</label>
                   <input
@@ -1326,6 +1404,16 @@ export default function App() {
                         setAddContentMessage({ type: 'error', text: 'Vui lòng điền đầy đủ Giai đoạn, Hạng mục và Nội dung.' });
                         return;
                      }
+                     if (addContentForm.positionMode !== 'end' && !addContentForm.targetItem) {
+                        setAddContentMessage({ type: 'error', text: 'Vui lòng chọn nội dung hiện tại để chèn.' });
+                        return;
+                     }
+                     
+                     let finalNoiDung = addContentForm.noiDung;
+                     if (addContentForm.positionMode !== 'end' && addContentForm.targetItem) {
+                        finalNoiDung += `|SORTED|${addContentForm.positionMode}|${addContentForm.targetItem}`;
+                     }
+                     
                      setIsAddingContent(true);
                      setAddContentMessage(null);
                      try {
@@ -1334,7 +1422,7 @@ export default function App() {
                           maCongTrinh: projectInfo["Mã công trình"],
                           giaiDoan: addContentForm.giaiDoan,
                           dauMuc: addContentForm.dauMuc,
-                          noiDung: addContentForm.noiDung,
+                          noiDung: finalNoiDung,
                           phongBan: addContentForm.phongBan
                         };
                         
@@ -1346,7 +1434,7 @@ export default function App() {
                         });
 
                         setAddContentMessage({ type: 'success', text: 'Đã hoàn tất!' });
-                        setAddContentForm(prev => ({...prev, noiDung: ''}));
+                        setAddContentForm(prev => ({...prev, noiDung: '', targetItem: '', positionMode: 'end'}));
                         
                         // Refetch Data 
                         setTimeout(() => {
