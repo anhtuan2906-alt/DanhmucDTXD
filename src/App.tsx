@@ -247,19 +247,100 @@ export default function App() {
     });
   };
 
+  const fetchHoSoLinks = async (): Promise<Map<string, string>> => {
+    const timestamp = new Date().getTime();
+    const url = `https://docs.google.com/spreadsheets/d/1B237SBdWeaQvc0GWH7hwcJI9ztiSxdBxXFbN4nBnxzU/htmlview/sheet?headers=true&gid=35605870&t=${timestamp}`;
+    
+    let html = '';
+    let response;
+    try {
+      response = await fetch(url);
+      if (!response.ok) throw new Error('Direct fetch failed');
+      html = await response.text();
+    } catch (e) {
+      try {
+        response = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+        if (!response.ok) throw new Error('Proxy fetch failed');
+        html = await response.text();
+      } catch (e2) {
+        try {
+          response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
+          if (!response.ok) throw new Error();
+          html = await response.text();
+        } catch (e3) {
+          try {
+            response = await fetch(`https://thingproxy.freeboard.io/fetch/${encodeURIComponent(url)}`);
+            html = await response.text();
+          } catch(e4) {
+             return new Map();
+          }
+        }
+      }
+    }
+
+    if (!html) return new Map();
+
+    const map = new Map<string, string>();
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const rows = doc.querySelectorAll('table tbody tr');
+      
+      rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length > 5) {
+          const maCT = cells[0].textContent?.replace(/\s+/g, ' ').trim() || '';
+          const noiDung = cells[2].textContent?.replace(/\s+/g, ' ').trim() || '';
+          const soVB = cells[3].textContent?.replace(/\s+/g, ' ').trim() || '';
+          const key = `${maCT}|${noiDung}|${soVB}`;
+          
+          const linkTag = cells[5].querySelector('a');
+          if (linkTag && linkTag.href) {
+            let href = linkTag.href;
+            if (href.includes('google.com/url?')) {
+              try {
+                const qs = href.split('?')[1];
+                const params = new URLSearchParams(qs);
+                const q = params.get('q');
+                if (q) href = q;
+              } catch(e) {}
+            }
+            map.set(key, href);
+          }
+        }
+      });
+    } catch(e) {
+      console.warn("Failed to parse htmlview", e);
+    }
+    return map;
+  };
+
   const [giaiDoanData, setGiaiDoanData] = useState<any[]>([]);
   const [dauMucData, setDauMucData] = useState<any[]>([]);
 
   const fetchUnifiedData = async () => {
     setLoading(true);
     try {
-      const [mauObj, boSungObj, hoSoObj, gdObj, dmObj] = await Promise.all([
+      const [mauObj, boSungObj, hoSoObj, gdObj, dmObj, hoSoLinks] = await Promise.all([
         fetchGoogleSheetCsv('Danh_Muc_Mau'),
         fetchGoogleSheetCsv('Danh_Muc_Bo_Sung'),
         fetchGoogleSheetCsv('Data_Ho_So'),
         fetchGoogleSheetCsv('Giaidoan'),
-        fetchGoogleSheetCsv('Daumuc')
+        fetchGoogleSheetCsv('Daumuc'),
+        fetchHoSoLinks()
       ]);
+      
+      hoSoObj.forEach((row, idx) => {
+        if (idx === 0) return;
+        const maCT = (row[0] || '').toString().replace(/\s+/g, ' ').trim();
+        const noiDung = (row[2] || '').toString().replace(/\s+/g, ' ').trim();
+        const soVB = (row[3] || '').toString().replace(/\s+/g, ' ').trim();
+        const key = `${maCT}|${noiDung}|${soVB}`;
+        if (hoSoLinks.has(key)) {
+            row[5] = hoSoLinks.get(key);
+        }
+      });
+      
       setDanhMucMauData(mauObj);
       setDanhMucBoSungData(boSungObj);
       setDataHoSoData(hoSoObj);
@@ -449,7 +530,20 @@ export default function App() {
   const fetchData = async () => {
     // Legacy polling function used by import modal. Now simply refreshes the Data_Ho_So.
     try {
-      const hoSoObj = await fetchGoogleSheetCsv('Data_Ho_So');
+      const [hoSoObj, hoSoLinks] = await Promise.all([
+        fetchGoogleSheetCsv('Data_Ho_So'),
+        fetchHoSoLinks()
+      ]);
+      hoSoObj.forEach((row, idx) => {
+        if (idx === 0) return;
+        const maCT = (row[0] || '').toString().replace(/\s+/g, ' ').trim();
+        const noiDung = (row[2] || '').toString().replace(/\s+/g, ' ').trim();
+        const soVB = (row[3] || '').toString().replace(/\s+/g, ' ').trim();
+        const key = `${maCT}|${noiDung}|${soVB}`;
+        if (hoSoLinks.has(key)) {
+            row[5] = hoSoLinks.get(key);
+        }
+      });
       setDataHoSoData(hoSoObj);
     } catch (e) {
       console.warn("Failed to update Data_Ho_So", e);
