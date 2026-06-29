@@ -21,7 +21,14 @@ function doPost(e) {
 
       // 1. Lưu file vào Google Drive
       if (fileData && fileData.trim() !== '') {
-        const rootFolder = DriveApp.getFolderById(targetFolderId);
+        let rootFolder;
+        try {
+          rootFolder = DriveApp.getFolderById(targetFolderId);
+        } catch (e) {
+          // Fallback to root folder if the provided ID is invalid or inaccessible
+          rootFolder = DriveApp.getRootFolder();
+        }
+        
         let projectFolder;
 
         // Tìm xem thư mục mã công trình đã tồn tại chưa
@@ -42,7 +49,8 @@ function doPost(e) {
       }
 
       // 2. Ghi dữ liệu vào sheet "Data_Ho_So"
-      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const spreadsheetId = payload.spreadsheetId || '1B237SBdWeaQvc0GWH7hwcJI9ztiSxdBxXFbN4nBnxzU';
+      const ss = SpreadsheetApp.openById(spreadsheetId);
       const sheet = ss.getSheetByName('Data_Ho_So');
       
       if (!sheet) {
@@ -73,7 +81,8 @@ function doPost(e) {
       // Logic xử lý Add Content Modal (Danh_Muc_Bo_Sung)
       const { maCongTrinh, giaiDoan, dauMuc, noiDung, phongBan } = payload;
       
-      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const spreadsheetId = payload.spreadsheetId || '1B237SBdWeaQvc0GWH7hwcJI9ztiSxdBxXFbN4nBnxzU';
+      const ss = SpreadsheetApp.openById(spreadsheetId);
       const sheet = ss.getSheetByName('Danh_Muc_Bo_Sung');
       
       if (!sheet) {
