@@ -208,7 +208,8 @@ export default function App() {
     noiDung: '',
     phongBan: 'QLĐT',
     positionMode: 'end',
-    targetItem: ''
+    targetItem: '',
+    isLocked: false
   });
   const [isAddingContent, setIsAddingContent] = useState(false);
   const [addContentMessage, setAddContentMessage] = useState<{type: 'error' | 'success', text: string} | null>(null);
@@ -1303,7 +1304,8 @@ export default function App() {
                   <select
                     value={addContentForm.giaiDoan}
                     onChange={e => setAddContentForm({...addContentForm, giaiDoan: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm font-medium text-slate-700 bg-white shadow-sm transition-all"
+                    disabled={addContentForm.isLocked}
+                    className={`w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm font-medium transition-all ${addContentForm.isLocked ? 'appearance-none bg-slate-100 text-slate-500 cursor-not-allowed' : 'text-slate-700 bg-white shadow-sm'}`}
                   >
                     <option value="">-- Chọn Giai đoạn --</option>
                     {giaiDoanData.slice(1).map(row => (
@@ -1316,7 +1318,8 @@ export default function App() {
                   <select
                     value={addContentForm.dauMuc}
                     onChange={e => setAddContentForm({...addContentForm, dauMuc: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm font-medium text-slate-700 bg-white shadow-sm transition-all"
+                    disabled={addContentForm.isLocked}
+                    className={`w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm font-medium transition-all ${addContentForm.isLocked ? 'appearance-none bg-slate-100 text-slate-500 cursor-not-allowed' : 'text-slate-700 bg-white shadow-sm'}`}
                   >
                     <option value="">-- Chọn Hạng mục --</option>
                     {dauMucData.slice(1).map(row => (
@@ -1852,6 +1855,15 @@ export default function App() {
                       alert('Vui lòng chọn công trình trước khi thêm nội dung!');
                       return;
                     }
+                    setAddContentForm({
+                      giaiDoan: '',
+                      dauMuc: '',
+                      noiDung: '',
+                      phongBan: 'QLĐT',
+                      positionMode: 'end',
+                      targetItem: '',
+                      isLocked: false
+                    });
                     setShowAddContentModal(true);
                   }}
                   className="p-1 px-[5px] bg-slate-100 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
@@ -1929,6 +1941,15 @@ export default function App() {
                       alert('Vui lòng chọn công trình trước khi thêm nội dung!');
                       return;
                     }
+                    setAddContentForm({
+                      giaiDoan: '',
+                      dauMuc: '',
+                      noiDung: '',
+                      phongBan: 'QLĐT',
+                      positionMode: 'end',
+                      targetItem: '',
+                      isLocked: false
+                    });
                     setShowAddContentModal(true);
                   }}
                   className="p-1 px-1.5 bg-slate-200 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
@@ -2037,7 +2058,10 @@ export default function App() {
                                             giaiDoan: gdMa,
                                             dauMuc: dmMa,
                                             noiDung: '',
-                                            phongBan: 'QLĐT'
+                                            phongBan: 'QLĐT',
+                                            positionMode: 'end',
+                                            targetItem: '',
+                                            isLocked: true
                                           });
                                           setShowAddContentModal(true);
                                         }}
@@ -2142,7 +2166,10 @@ export default function App() {
                                         giaiDoan: gdMa,
                                         dauMuc: dmMa,
                                         noiDung: '',
-                                        phongBan: 'QLĐT'
+                                        phongBan: 'QLĐT',
+                                        positionMode: 'end',
+                                        targetItem: '',
+                                        isLocked: true
                                       });
                                       setShowAddContentModal(true);
                                     }}
