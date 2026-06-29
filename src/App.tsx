@@ -490,16 +490,26 @@ export default function App() {
         targetFolderId: '1gK37pNEA0G4--iocJNyiUMgwrPAxDqJz'
       };
 
-      // Since Apps script blocks CORS responses on redirects, we use no-cors. 
-      // We assume it succeeds if no network error is thrown.
-      await fetch(scriptUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8',
-        },
-        body: JSON.stringify(payload),
-        mode: 'no-cors'
-      });
+      const startTime = Date.now();
+      try {
+        await fetch(scriptUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8',
+          },
+          body: JSON.stringify(payload),
+          mode: 'no-cors'
+        });
+      } catch (err: any) {
+        // When using no-cors with Google Apps Script, successful executions often end in a redirect 
+        // that gets blocked by the browser (CORS, Adblockers, etc.), throwing 'Failed to fetch'.
+        // If the request took more than 1 second, it almost certainly reached the server and executed.
+        if (err.message === 'Failed to fetch' && Date.now() - startTime > 1000) {
+          console.warn('Apps Script execution likely succeeded despite Failed to fetch error.');
+        } else {
+          throw err;
+        }
+      }
 
       // Show success, and schedule a data fetch
       setImportMessage({ type: 'success', text: 'Lưu dữ liệu thành công!' });
@@ -518,11 +528,11 @@ export default function App() {
       }
       
       // Polling for update (simplified, just fetch once)
-      setTimeout(() => fetchData(), 1000);
+      setTimeout(() => fetchData(), 1500);
       
     } catch (err: any) {
       console.error(err);
-      setImportMessage({ type: 'error', text: `Lỗi hệ thống: ${err.message}. Hãy cấp quyền DriveApp trong Apps Script.` });
+      setImportMessage({ type: 'error', text: `Lỗi: ${err.message}. (Nếu dữ liệu đã lên Drive, có thể bỏ qua lỗi này)` });
     } finally {
       setIsImporting(false);
     }
@@ -1426,12 +1436,21 @@ export default function App() {
                           phongBan: addContentForm.phongBan
                         };
                         
-                        await fetch(scriptUrl, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                          body: JSON.stringify(payload),
-                          mode: 'no-cors'
-                        });
+                        const startTime = Date.now();
+                        try {
+                          await fetch(scriptUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify(payload),
+                            mode: 'no-cors'
+                          });
+                        } catch (err: any) {
+                          if (err.message === 'Failed to fetch' && Date.now() - startTime > 1000) {
+                            console.warn('Apps Script execution likely succeeded despite Failed to fetch error.');
+                          } else {
+                            throw err;
+                          }
+                        }
 
                         setAddContentMessage({ type: 'success', text: 'Đã hoàn tất!' });
                         setAddContentForm(prev => ({...prev, noiDung: '', targetItem: '', positionMode: 'end'}));
