@@ -1570,10 +1570,11 @@ export default function App() {
                     }
                     setShowImportModal(true);
                   }}
-                  className="flex flex-row items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 font-bold shadow-sm hover:shadow-md active:scale-95 transition-all duration-200 w-full"
+                  className="group relative flex flex-row items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-b from-blue-500 to-blue-600 text-white rounded-xl shadow-[0_2px_10px_-3px_rgba(37,99,235,0.4)] hover:shadow-[0_8px_20px_-4px_rgba(37,99,235,0.6)] font-bold active:scale-[0.97] transition-all duration-200 w-full overflow-hidden ring-1 ring-inset ring-blue-400/30"
                 >
-                  <FilePlus className="w-4 h-4" />
-                  <span className="uppercase tracking-wider text-[11px] sm:text-xs">Thêm mới</span>
+                  <div className="absolute inset-0 bg-white/20 translate-y-[-100%] group-hover:translate-y-[100%] transition-transform duration-700 ease-in-out"></div>
+                  <FilePlus className="w-[18px] h-[18px] relative z-10" />
+                  <span className="uppercase tracking-wider text-[11px] sm:text-xs relative z-10">Thêm mới</span>
                 </button>
                 
                 <button 
