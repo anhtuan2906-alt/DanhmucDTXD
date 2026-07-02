@@ -197,6 +197,7 @@ export default function App() {
   const [isImporting, setIsImporting] = useState(false);
   const [importMessage, setImportMessage] = useState<{type: 'error' | 'success', text: string} | null>(null);
   const [showImportSuccessDialog, setShowImportSuccessDialog] = useState(false);
+  const [duplicateWarning, setDuplicateWarning] = useState<{noiDung: string, soVB: string, ngayVB: string, fileLink: string} | null>(null);
   // Centralized Sheets Data States
   const [danhMucMauData, setDanhMucMauData] = useState<any[]>([]);
   const [danhMucBoSungData, setDanhMucBoSungData] = useState<any[]>([]);
@@ -408,7 +409,7 @@ export default function App() {
     }
   }, [showImportModal, projectInfo]);
 
-  const handleImportSubmit = async () => {
+  const handleImportSubmit = async (force: boolean = false) => {
     if (!scriptUrl) {
       setImportMessage({ type: 'error', text: 'Vui lòng cấu hình Apps Script Web App URL.' });
       return;
@@ -419,7 +420,7 @@ export default function App() {
       return;
     }
 
-    if (dataHoSoData.length > 0) {
+    if (!force && dataHoSoData.length > 0) {
       const hoSoHeaders = dataHoSoData[0] || [];
       const getIdx = (headers: string[], name: string, defaultIdx: number) => {
         const lowerName = name.toLowerCase();
@@ -432,8 +433,11 @@ export default function App() {
       const idxMaCT = getIdx(hoSoHeaders, 'mã ct', 0);
       const idxPB = getIdx(hoSoHeaders, 'phòng ban', 1);
       const idxND = getIdx(hoSoHeaders, 'nội dung', 2);
+      const idxSoVB = getIdx(hoSoHeaders, 'số vb', 3);
+      const idxNgayVB = getIdx(hoSoHeaders, 'ngày vb', 4);
+      const idxFile = getIdx(hoSoHeaders, 'link', 5);
 
-      const isDuplicate = dataHoSoData.slice(1).some(row => {
+      const duplicateRow = dataHoSoData.slice(1).find(row => {
         const rowMaCT = (row[idxMaCT] || '').trim();
         const rowPB = (row[idxPB] || '').trim();
         const rowND = (row[idxND] || '').trim();
@@ -443,8 +447,13 @@ export default function App() {
                rowND === importForm.noiDung.trim();
       });
 
-      if (isDuplicate) {
-        setImportMessage({ type: 'error', text: 'Văn bản đã được nhập. Từ chối thực hiện.' });
+      if (duplicateRow) {
+        setDuplicateWarning({
+          noiDung: duplicateRow[idxND]?.trim() || '',
+          soVB: duplicateRow[idxSoVB]?.trim() || '',
+          ngayVB: duplicateRow[idxNgayVB]?.trim() || '',
+          fileLink: duplicateRow[idxFile]?.trim() || ''
+        });
         return;
       }
     }
@@ -1237,7 +1246,7 @@ export default function App() {
                   </div>
 
                   <button
-                    onClick={handleImportSubmit}
+                    onClick={() => handleImportSubmit()}
                     disabled={isImporting}
                     className="w-full py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-bold transition-colors disabled:bg-blue-400 mt-2 shadow-sm"
                   >
@@ -1283,6 +1292,81 @@ export default function App() {
               >
                 ĐÓNG
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Duplicate Warning Dialog */}
+        {duplicateWarning && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-[20px] shadow-2xl p-6 flex flex-col w-full max-w-md animate-in zoom-in-95 duration-200 border border-amber-200/50">
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-amber-100/80 flex items-center justify-center flex-shrink-0">
+                  <AlertCircle className="w-5 h-5 text-amber-600" strokeWidth={2.5} />
+                </div>
+                <h3 className="text-xl font-bold text-slate-800">Cảnh báo: Đã có văn bản!</h3>
+              </div>
+              
+              {/* Description */}
+              <p className="text-slate-600 text-[15px] leading-relaxed mb-5">
+                Một văn bản có cùng nội dung đã được nhập trước đó. Thông tin chi tiết:
+              </p>
+              
+              {/* Details Box */}
+              <div className="bg-[#f8f9fa] rounded-xl border border-slate-200 p-4 mb-6">
+                <div className="mb-4">
+                  <div className="text-[13px] font-medium text-slate-500 mb-1">Nội dung văn bản:</div>
+                  <div className="text-[15px] font-bold text-slate-800 leading-snug">{duplicateWarning.noiDung}</div>
+                </div>
+                
+                <div className="flex gap-4 mb-4">
+                  <div className="flex-1">
+                    <div className="text-[13px] font-medium text-slate-500 mb-1">Số VB:</div>
+                    <div className="text-[15px] font-bold text-slate-800">{duplicateWarning.soVB}</div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[13px] font-medium text-slate-500 mb-1">Ngày VB:</div>
+                    <div className="text-[15px] font-bold text-slate-800">{duplicateWarning.ngayVB}</div>
+                  </div>
+                </div>
+                
+                <div>
+                  <div className="text-[13px] font-medium text-slate-500 mb-1.5">File đính kèm:</div>
+                  {duplicateWarning.fileLink && duplicateWarning.fileLink !== 'Tải lên' && duplicateWarning.fileLink !== 'link' ? (
+                    <a 
+                      href={duplicateWarning.fileLink} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="inline-flex items-center gap-1.5 text-[14px] font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
+                    >
+                      <Eye className="w-[15px] h-[15px]" />
+                      Xem file
+                    </a>
+                  ) : (
+                    <span className="text-[14px] font-medium text-slate-400 italic">Không có file đính kèm</span>
+                  )}
+                </div>
+              </div>
+              
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDuplicateWarning(null)}
+                  className="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 font-bold transition-colors"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  onClick={() => {
+                    setDuplicateWarning(null);
+                    handleImportSubmit(true);
+                  }}
+                  className="flex-1 py-2.5 bg-[#f99200] text-white rounded-xl hover:bg-[#e08300] font-bold transition-colors shadow-sm"
+                >
+                  Vẫn tiếp tục lưu
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1727,10 +1811,11 @@ export default function App() {
                       alert('Có lỗi xảy ra khi tạo file Excel. Vui lòng thử lại.');
                     }
                   }}
-                  className="flex flex-row items-center justify-center gap-1.5 px-3 py-2 bg-white text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-50 font-bold shadow-sm hover:shadow-md active:scale-95 transition-all duration-200 cursor-pointer w-full"
+                  className="group relative flex flex-row items-center justify-center gap-2 px-4 py-2.5 bg-white text-emerald-700 border border-emerald-200 rounded-xl shadow-[0_2px_10px_-3px_rgba(16,185,129,0.2)] hover:shadow-[0_8px_20px_-4px_rgba(16,185,129,0.3)] hover:bg-emerald-50 font-bold active:scale-[0.97] transition-all duration-200 cursor-pointer w-full overflow-hidden"
                 >
-                  <Download className="w-4 h-4" />
-                  <span className="uppercase tracking-wider text-[11px] sm:text-xs">Xuất Excel</span>
+                  <div className="absolute inset-0 bg-emerald-100/50 translate-y-[-100%] group-hover:translate-y-[100%] transition-transform duration-700 ease-in-out"></div>
+                  <Download className="w-[18px] h-[18px] relative z-10" />
+                  <span className="uppercase tracking-wider text-[11px] sm:text-xs relative z-10">Xuất Excel</span>
                 </button>
               </div>
             </div>
