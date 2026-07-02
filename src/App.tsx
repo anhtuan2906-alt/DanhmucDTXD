@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx-js-style';
-import { Settings, RefreshCw, FilePlus, Database, Download, ExternalLink, AlertCircle, X, ChevronDown, Eye, Lock, User as UserIcon, LogIn, LogOut, Filter, MoreVertical, Loader2, Plus } from 'lucide-react';
+import { Settings, RefreshCw, FilePlus, Database, Download, ExternalLink, AlertCircle, X, ChevronDown, Eye, Lock, User as UserIcon, LogIn, LogOut, Filter, MoreVertical, Loader2, Plus, Check } from 'lucide-react';
 import { EVN_HCMC_LOGO } from "./assets/logo";
 
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1B237SBdWeaQvc0GWH7hwcJI9ztiSxdBxXFbN4nBnxzU/export?format=csv&gid=0';
@@ -196,6 +196,7 @@ export default function App() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importMessage, setImportMessage] = useState<{type: 'error' | 'success', text: string} | null>(null);
+  const [showImportSuccessDialog, setShowImportSuccessDialog] = useState(false);
   // Centralized Sheets Data States
   const [danhMucMauData, setDanhMucMauData] = useState<any[]>([]);
   const [danhMucBoSungData, setDanhMucBoSungData] = useState<any[]>([]);
@@ -512,8 +513,8 @@ export default function App() {
         }
       }
 
-      // Show success, and schedule a data fetch
-      setImportMessage({ type: 'success', text: 'Lưu dữ liệu thành công!' });
+      // Show success dialog, and schedule a data fetch
+      setShowImportSuccessDialog(true);
       
       // Reset form variables to original states while preserving the active department and project
       setImportForm(prev => ({
@@ -1243,9 +1244,9 @@ export default function App() {
                     {isImporting ? 'ĐANG GỬI...' : 'LƯU'}
                   </button>
 
-                  {importMessage && (
-                    <div className={`mt-4 text-sm font-bold flex items-center justify-center gap-2 ${importMessage.type === 'error' ? 'text-red-600' : 'text-emerald-600'}`}>
-                      {importMessage.type === 'error' ? <X className="w-5 h-5 font-bold" /> : <div className="w-2 h-2 rounded-full bg-emerald-600"></div>}
+                  {importMessage && importMessage.type === 'error' && (
+                    <div className="mt-4 text-sm font-bold flex items-center justify-center gap-2 text-red-600">
+                      <X className="w-5 h-5 font-bold" />
                       {importMessage.text}
                     </div>
                   )}
@@ -1263,6 +1264,25 @@ export default function App() {
                   HOÀN TẤT
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Import Success Dialog */}
+        {showImportSuccessDialog && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-2xl p-6 flex flex-col items-center gap-4 max-w-sm w-full animate-in zoom-in-95 duration-200">
+              <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
+                <Check className="w-6 h-6 font-bold" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800">Lưu thành công!</h3>
+              <p className="text-slate-500 text-center text-sm">Dữ liệu văn bản mới đã được lưu vào hệ thống.</p>
+              <button
+                onClick={() => setShowImportSuccessDialog(false)}
+                className="mt-2 w-full py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-bold transition-colors shadow-sm"
+              >
+                ĐÓNG
+              </button>
             </div>
           </div>
         )}
