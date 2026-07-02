@@ -1317,17 +1317,17 @@ export default function App() {
               <div className="bg-[#f8f9fa] rounded-xl border border-slate-200 p-4 mb-6">
                 <div className="mb-4">
                   <div className="text-[13px] font-medium text-slate-500 mb-1">Nội dung văn bản:</div>
-                  <div className="text-[15px] font-bold text-slate-800 leading-snug">{duplicateWarning.noiDung}</div>
+                  <div className="text-[15px] text-slate-800 leading-snug">{duplicateWarning.noiDung}</div>
                 </div>
                 
                 <div className="flex gap-4 mb-4">
                   <div className="flex-1">
                     <div className="text-[13px] font-medium text-slate-500 mb-1">Số VB:</div>
-                    <div className="text-[15px] font-bold text-slate-800">{duplicateWarning.soVB}</div>
+                    <div className="text-[15px] text-slate-800">{duplicateWarning.soVB}</div>
                   </div>
                   <div className="flex-1">
                     <div className="text-[13px] font-medium text-slate-500 mb-1">Ngày VB:</div>
-                    <div className="text-[15px] font-bold text-slate-800">{duplicateWarning.ngayVB}</div>
+                    <div className="text-[15px] text-slate-800">{duplicateWarning.ngayVB}</div>
                   </div>
                 </div>
                 
