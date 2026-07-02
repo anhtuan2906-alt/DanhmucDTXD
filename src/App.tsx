@@ -1709,7 +1709,7 @@ export default function App() {
                   className="flex flex-row items-center justify-center gap-1.5 px-3 py-2 bg-white text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-50 font-bold shadow-sm hover:shadow-md active:scale-95 transition-all duration-200 cursor-pointer w-full"
                 >
                   <Download className="w-4 h-4" />
-                  <span className="uppercase tracking-wider text-[11px] sm:text-xs">Tải xuống</span>
+                  <span className="uppercase tracking-wider text-[11px] sm:text-xs">Xuất Excel</span>
                 </button>
               </div>
             </div>
